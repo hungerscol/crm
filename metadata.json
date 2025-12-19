@@ -1,0 +1,5 @@
+{
+  "name": "Hungers CRM - Internal Sales Engine",
+  "description": "A high-performance internal CRM for Hungers, featuring a Pipedrive-inspired pipeline, deal management, and AI-powered insights using Gemini.",
+  "requestFramePermissions": []
+}
