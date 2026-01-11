@@ -1,29 +1,36 @@
 
 import React, { useState, useEffect } from 'react';
-import { Deal, DealStatus, Activity, Country } from '../types';
+import { Deal, DealStatus, Activity, Seller, Currency, Contact } from '../types';
+import { PIPELINE_STAGES } from '../constants';
 import { analyzeDeal } from '../services/geminiService';
-import { SELLERS } from '../constants';
 
 interface DealDetailModalProps {
   deal: Deal | null;
   onClose: () => void;
   onUpdateDeal: (updatedDeal: Deal) => void;
+  sellers: Seller[];
+  contacts: Contact[];
+  onDelete?: () => void;
 }
 
-const DealDetailModal: React.FC<DealDetailModalProps> = ({ deal, onClose, onUpdateDeal }) => {
-  const [analysis, setAnalysis] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+const DealDetailModal: React.FC<DealDetailModalProps> = ({ deal, onClose, onUpdateDeal, sellers, contacts, onDelete }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'Nota' | 'Llamada' | 'Reunión'>('Nota');
   const [formData, setFormData] = useState<Partial<Deal>>({});
-  const [activityInput, setActivityInput] = useState({ content: '', type: 'Nota' as Activity['type'], date: new Date().toISOString().split('T')[0] });
-
-  const isCreation = deal && deal.id.startsWith('deal-');
+  const [noteInput, setNoteInput] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
     if (deal) {
-      setAnalysis('');
       setFormData({ ...deal });
+      setAiAnalysis(null);
     }
   }, [deal]);
+
+  const handleStatusChange = (status: DealStatus) => {
+    setFormData(prev => ({ ...prev, status }));
+  };
 
   const handleSave = () => {
     if (deal && formData) {
@@ -32,249 +39,255 @@ const DealDetailModal: React.FC<DealDetailModalProps> = ({ deal, onClose, onUpda
     }
   };
 
-  const scheduleActivity = () => {
-    if (!activityInput.content || !deal) return;
-    const newActivity: Activity = {
+  const handleAiAnalysis = async () => {
+    if (!deal) return;
+    setIsAnalyzing(true);
+    try {
+      const result = await analyzeDeal({ ...deal, ...formData } as Deal);
+      setAiAnalysis(result);
+    } catch (error) {
+      setAiAnalysis("Error al obtener insights de la IA.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const addActivity = () => {
+    if (!noteInput.trim()) return;
+    const newAct: Activity = {
       id: `act-${Date.now()}`,
-      type: activityInput.type,
-      content: activityInput.content,
-      date: activityInput.date,
+      type: activeSubTab,
+      content: noteInput,
+      date: new Date().toISOString(),
+      dueDate: dueDate || undefined,
       completed: false
     };
-    const updatedActivities = [...(formData.activities || []), newActivity];
-    setFormData({ ...formData, activities: updatedActivities, nextSteps: activityInput.content });
-    setActivityInput({ content: '', type: 'Nota', date: new Date().toISOString().split('T')[0] });
+    setFormData(prev => ({
+      ...prev,
+      activities: [newAct, ...(prev.activities || [])]
+    }));
+    setNoteInput('');
+    setDueDate('');
+  };
+
+  const toggleActivityStatus = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      activities: prev.activities?.map(a => a.id === id ? { ...a, completed: !a.completed } : a)
+    }));
   };
 
   if (!deal || !formData) return null;
 
-  const valueCOP = (formData.value || 0) * 4200; // Mock rate
-  const valueMXN = (formData.value || 0) * 20.5; // Mock rate
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-hidden">
-      <div className="bg-dark-lighter w-full max-w-5xl rounded-2xl border border-dark-border shadow-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="p-6 border-b border-dark-border flex justify-between items-center bg-zinc-900/80">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <select 
-                className="bg-hungers text-dark text-[10px] font-black uppercase px-2 py-0.5 rounded cursor-pointer outline-none"
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value as DealStatus})}
-              >
-                {Object.values(DealStatus).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              <span className="text-zinc-500 text-xs">{isCreation ? 'Nuevo Lead' : `Expediente #${deal.id}`}</span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-200/40 backdrop-blur-md p-4 animate-in fade-in duration-300">
+      <div className="bg-white w-full max-w-6xl h-[92vh] rounded-[2.5rem] border border-zinc-200 flex flex-col overflow-hidden shadow-[0_35px_60px_-15px_rgba(0,0,0,0.2)] animate-in zoom-in duration-300">
+        
+        {/* Header Section */}
+        <div className="p-8 border-b border-zinc-100 bg-zinc-50/50">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <input 
+                className="bg-transparent text-4xl font-black tracking-tighter text-zinc-950 border-none outline-none focus:ring-0 p-0 w-full placeholder:text-zinc-300"
+                value={formData.title || ''}
+                onChange={e => setFormData({...formData, title: e.target.value})}
+                placeholder="Nombre del Trato"
+              />
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest bg-zinc-100 px-2 py-1 rounded-md">ID: {formData.id}</span>
+                <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Creado: {new Date(formData.createdAt || '').toLocaleDateString()}</span>
+              </div>
             </div>
-            <input 
-              className="w-full bg-transparent text-2xl font-bold text-white border-none focus:ring-1 focus:ring-hungers/30 rounded px-1 outline-none"
-              value={formData.title || ''}
-              placeholder="Nombre del Negocio"
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-            />
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleAiAnalysis}
+                disabled={isAnalyzing}
+                className="flex items-center gap-2 px-6 py-3 bg-hungers text-zinc-950 rounded-2xl hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+              >
+                {isAnalyzing ? (
+                  <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <span className="text-xl">✨</span>
+                )}
+                <span className="text-[10px] font-black uppercase tracking-widest">Estrategia AI</span>
+              </button>
+              {onDelete && (
+                <button onClick={onDelete} className="p-3 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              )}
+              <button onClick={onClose} className="p-3 hover:bg-zinc-100 rounded-2xl text-zinc-400 transition-all">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-full transition-colors text-zinc-500 hover:text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
+          
+          {/* Pipeline Stepper */}
+          <div className="flex gap-1.5 h-10">
+            {PIPELINE_STAGES.map((s) => (
+              <button 
+                key={s} 
+                onClick={() => handleStatusChange(s as any)} 
+                className={`flex-1 pipeline-chevron text-[9px] font-black uppercase tracking-widest transition-all ${formData.status === s ? 'bg-hungers text-zinc-950 shadow-lg ring-2 ring-hungers/20' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Info (Lead Data) */}
-          <div className="lg:col-span-8 space-y-8">
-            <section>
-              <h3 className="text-xs font-black text-hungers uppercase tracking-widest mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                Información del Cliente
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Empresa</label>
-                  <input className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-hungers/50 outline-none transition-all"
-                    value={formData.organization || ''} onChange={(e) => setFormData({...formData, organization: e.target.value})} />
+        <div className="flex-1 flex overflow-hidden">
+          {/* LEFT PANEL: Metadata & Insights */}
+          <div className="w-80 border-r border-zinc-100 p-8 space-y-8 overflow-y-auto bg-zinc-50/20 custom-scrollbar">
+            {aiAnalysis && (
+              <section className="bg-hungers/10 border border-hungers/20 p-6 rounded-3xl animate-in slide-in-from-left duration-500 shadow-sm ring-1 ring-hungers/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xl">✨</span>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-950">Insights de Hungers AI</p>
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Nombre del Contacto</label>
-                  <input className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-hungers/50 outline-none transition-all"
-                    value={formData.contactName || ''} onChange={(e) => setFormData({...formData, contactName: e.target.value})} />
+                <div className="text-[11px] leading-relaxed font-medium prose max-w-none text-zinc-800">
+                  {aiAnalysis.split('\n').map((line, i) => <p key={i} className="mb-2">{line}</p>)}
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Email Corporativo</label>
-                  <input type="email" className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-hungers/50 outline-none transition-all"
-                    value={formData.email || ''} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Teléfono / WhatsApp</label>
-                  <input className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-hungers/50 outline-none transition-all"
-                    value={formData.phone || ''} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Dirección del Cliente</label>
-                  <input className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-hungers/50 outline-none transition-all"
-                    value={formData.address || ''} onChange={(e) => setFormData({...formData, address: e.target.value})} />
-                </div>
-              </div>
-            </section>
+              </section>
+            )}
 
-            <section>
-               <h3 className="text-xs font-black text-hungers uppercase tracking-widest mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                Asignación y Localización
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Vendedor Asignado</label>
-                  <select 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm outline-none focus:border-hungers/50 transition-all"
-                    value={formData.sellerId}
-                    onChange={(e) => setFormData({...formData, sellerId: e.target.value})}
-                  >
-                    <option value="">Seleccionar Vendedor</option>
-                    {SELLERS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">País / Región</label>
-                  <select 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-white text-sm outline-none focus:border-hungers/50 transition-all"
-                    value={formData.country}
-                    onChange={(e) => setFormData({...formData, country: e.target.value as Country})}
-                  >
-                    <option value="Colombia">Colombia</option>
-                    <option value="México">México</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-xs font-black text-hungers uppercase tracking-widest mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Valor de la Negociación
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800 shadow-inner">
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase mb-1 block">Monto Base (USD)</label>
-                  <input type="number" className="w-full bg-transparent border-b border-zinc-700 text-2xl text-white font-black outline-none focus:border-hungers"
-                    value={formData.value || 0} onChange={(e) => setFormData({...formData, value: Number(e.target.value)})} />
-                </div>
-                <div className="flex flex-col justify-center">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Equivalente COP</label>
-                  <p className="text-xl font-bold text-zinc-300">$ {valueCOP.toLocaleString('es-CO')}</p>
-                </div>
-                <div className="flex flex-col justify-center">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Equivalente MXN</label>
-                  <p className="text-xl font-bold text-zinc-300">$ {valueMXN.toLocaleString('es-MX')}</p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h3 className="text-xs font-black text-hungers uppercase tracking-widest mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                Programar Actividades / Siguientes Pasos
-              </h3>
-              <div className="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800 space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Actividad</label>
-                    <input className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-hungers/50"
-                      placeholder="Ej: Llamar para cierre..."
-                      value={activityInput.content} onChange={(e) => setActivityInput({...activityInput, content: e.target.value})} />
-                  </div>
-                  <div className="w-32">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Tipo</label>
-                    <select className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-white text-sm outline-none"
-                      value={activityInput.type} onChange={(e) => setActivityInput({...activityInput, type: e.target.value as any})}>
-                      <option>Nota</option>
-                      <option>Llamada</option>
-                      <option>Correo</option>
-                      <option>Reunión</option>
-                    </select>
-                  </div>
-                  <div className="w-40">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase mb-1 block">Fecha</label>
-                    <input type="date" className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-white text-sm outline-none"
-                      value={activityInput.date} onChange={(e) => setActivityInput({...activityInput, date: e.target.value})} />
-                  </div>
-                  <div className="flex items-end">
-                    <button onClick={scheduleActivity} className="bg-hungers text-dark px-4 py-2 rounded-xl font-bold text-xs hover:scale-105 active:scale-95 transition-all">Añadir</button>
-                  </div>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                  {formData.activities?.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(act => (
-                    <div key={act.id} className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-800 rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                          act.type === 'Reunión' ? 'border-blue-500 text-blue-500' :
-                          act.type === 'Llamada' ? 'border-yellow-500 text-yellow-500' :
-                          'border-zinc-500 text-zinc-500'
-                        }`}>{act.type}</span>
-                        <p className="text-sm text-zinc-300">{act.content}</p>
-                      </div>
-                      <span className="text-[10px] font-mono text-zinc-600">{act.date}</span>
+            <section className="space-y-6">
+              <p className="text-[10px] font-black text-zinc-950 uppercase tracking-widest border-b border-zinc-200 pb-2">Información de Contacto</p>
+              <div className="space-y-4">
+                {[
+                  { label: 'Nombre', key: 'contactName', icon: '👤', placeholder: 'Nombre del lead' },
+                  { label: 'Email', key: 'email', icon: '✉️', placeholder: 'correo@ejemplo.com' },
+                  { label: 'Teléfono', key: 'phone', icon: '📞', placeholder: '+57...' },
+                  { label: 'Empresa', key: 'organization', icon: '🏢', placeholder: 'Nombre empresa' }
+                ].map(field => (
+                  <div key={field.key} className="space-y-1">
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest ml-1">{field.label}</label>
+                    <div className="relative group">
+                      <span className="absolute left-3 top-3.5 text-xs opacity-50">{field.icon}</span>
+                      <input 
+                        className="w-full bg-white border border-zinc-100 rounded-xl py-3 pl-9 pr-4 text-xs font-bold text-zinc-950 outline-none focus:border-hungers focus:shadow-sm transition-all" 
+                        placeholder={field.placeholder} 
+                        value={(formData as any)[field.key]} 
+                        onChange={e => setFormData({...formData, [field.key]: e.target.value})} 
+                      />
                     </div>
-                  ))}
-                  {(!formData.activities || formData.activities.length === 0) && <p className="text-center text-xs text-zinc-600 italic py-4">No hay actividades programadas</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-6">
+              <p className="text-[10px] font-black text-zinc-950 uppercase tracking-widest border-b border-zinc-200 pb-2">Configuración Económica</p>
+              <div className="bg-white p-5 rounded-3xl border border-zinc-100 shadow-sm space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest ml-1">Moneda</span>
+                  <select className="w-full bg-zinc-50 border border-zinc-100 rounded-xl p-3 text-[10px] font-black text-zinc-950 outline-none focus:border-hungers" value={formData.currency} onChange={e => setFormData({...formData, currency: e.target.value as Currency})}>
+                    <option value="COP">COP (Colombia)</option>
+                    <option value="USD">USD (Dólares)</option>
+                    <option value="MXN">MXN (México)</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest ml-1">Valor del Deal</span>
+                  <div className="relative">
+                    <span className="absolute left-4 top-3.5 text-zinc-400 font-black text-xs">$</span>
+                    <input type="number" className="w-full bg-zinc-50 border border-zinc-100 rounded-xl p-3 pl-8 text-sm font-black text-zinc-950 outline-none focus:border-hungers" value={formData.value} onChange={e => setFormData({...formData, value: Number(e.target.value)})} />
+                  </div>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* AI Insights & Summary */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-hungers/5 border border-hungers/20 p-6 rounded-2xl shadow-xl shadow-hungers/5">
-              <h3 className="text-xs font-black text-hungers uppercase flex items-center gap-2 mb-4">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                Hungers AI Insights
-              </h3>
-              <p className="text-[11px] text-zinc-400 mb-4 leading-relaxed italic">Nuestra IA analiza los datos del cliente para sugerirte la mejor estrategia de cierre.</p>
-              <button 
-                onClick={async () => {
-                  setLoading(true);
-                  const res = await analyzeDeal(formData as Deal);
-                  setAnalysis(res);
-                  setLoading(false);
-                }}
-                className="w-full bg-hungers text-dark text-xs font-black py-3 rounded-xl mb-4 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-hungers/20"
-                disabled={loading}
-              >
-                {loading ? 'Generando Estrategia...' : 'Generar Análisis IA'}
-              </button>
-              {analysis && <div className="text-[11px] text-zinc-300 leading-relaxed bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 max-h-60 overflow-y-auto custom-scrollbar prose prose-invert">{analysis}</div>}
+          {/* RIGHT PANEL: Activities Timeline */}
+          <div className="flex-1 flex flex-col bg-white">
+            <div className="p-8 border-b border-zinc-50 bg-white">
+              <div className="flex gap-8 mb-6 border-b border-zinc-50">
+                {(['Nota', 'Llamada', 'Reunión'] as const).map(t => (
+                  <button 
+                    key={t} 
+                    onClick={() => setActiveSubTab(t)} 
+                    className={`text-[11px] font-black uppercase tracking-widest pb-3 transition-all relative ${activeSubTab === t ? 'text-zinc-950' : 'text-zinc-400 hover:text-zinc-600'}`}
+                  >
+                    {t}s
+                    {activeSubTab === t && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-hungers rounded-full"></div>}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="relative p-6 bg-zinc-50 rounded-[2rem] border border-zinc-200 hover:bg-white hover:shadow-xl transition-all duration-300">
+                <textarea 
+                  className="w-full bg-transparent text-sm font-medium text-zinc-950 outline-none resize-none h-24 placeholder:text-zinc-400 custom-scrollbar" 
+                  placeholder={`Redacta los detalles de la ${activeSubTab.toLowerCase()}...`} 
+                  value={noteInput} 
+                  onChange={e => setNoteInput(e.target.value)} 
+                />
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-100">
+                   <div className="flex items-center gap-4">
+                     <div className="flex flex-col gap-1">
+                       <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest ml-1">Prioridad</span>
+                       <select className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[9px] font-black outline-none" value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value as any})}>
+                         <option value="low">Baja</option>
+                         <option value="medium">Media</option>
+                         <option value="high">Alta</option>
+                       </select>
+                     </div>
+                     <div className="flex flex-col gap-1">
+                       <span className="text-[8px] font-black text-zinc-400 uppercase tracking-widest ml-1">Fecha Límite</span>
+                       <input type="date" className="bg-white border border-zinc-200 rounded-lg px-2 py-1 text-[9px] font-black outline-none" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+                     </div>
+                   </div>
+                   <button onClick={addActivity} className="bg-hungers text-zinc-950 px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg active:scale-95 transition-all">Agregar {activeSubTab}</button>
+                </div>
+              </div>
             </div>
 
-            <div className="bg-zinc-900/50 p-6 rounded-2xl border border-zinc-800">
-              <h3 className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-4">Estado del Lead</h3>
-              <div className="space-y-3">
-                 <div className="flex justify-between items-center text-xs">
-                   <span className="text-zinc-500">Prioridad:</span>
-                   <select 
-                    className="bg-zinc-800 text-white rounded px-2 py-0.5 outline-none"
-                    value={formData.priority}
-                    onChange={(e) => setFormData({...formData, priority: e.target.value as any})}
-                   >
-                     <option value="low">Baja</option>
-                     <option value="medium">Media</option>
-                     <option value="high">Alta</option>
-                   </select>
-                 </div>
-                 <div className="flex justify-between items-center text-xs">
-                   <span className="text-zinc-500">Creado el:</span>
-                   <span className="text-zinc-300">{new Date(formData.createdAt || Date.now()).toLocaleDateString()}</span>
-                 </div>
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-zinc-50/20 custom-scrollbar">
+              <div className="flex items-center gap-3 mb-2">
+                 <p className="text-[10px] font-black text-zinc-950 uppercase tracking-[0.2em]">Historial de Actividad</p>
+                 <div className="flex-1 h-px bg-zinc-200"></div>
               </div>
+              
+              {!formData.activities || formData.activities.length === 0 ? (
+                <div className="h-40 flex flex-col items-center justify-center text-zinc-300 opacity-60">
+                   <div className="text-4xl mb-2">📅</div>
+                   <p className="text-[10px] font-black uppercase tracking-widest">Sin tareas registradas</p>
+                </div>
+              ) : (
+                formData.activities.map(act => (
+                  <div key={act.id} className={`flex gap-5 group relative animate-in slide-in-from-bottom duration-300 ${act.completed ? 'opacity-50' : ''}`}>
+                    <div className="flex flex-col items-center">
+                      <button 
+                        onClick={() => toggleActivityStatus(act.id)}
+                        className={`w-10 h-10 rounded-2xl flex items-center justify-center text-sm shadow-md transition-all z-10 ${act.completed ? 'bg-brand-success text-white border-brand-success' : 'bg-white border border-zinc-200 text-zinc-400 hover:border-hungers hover:text-zinc-950'}`}
+                      >
+                        {act.completed ? '✓' : act.type === 'Nota' ? '📄' : act.type === 'Llamada' ? '📞' : '🤝'}
+                      </button>
+                      <div className="w-px flex-1 bg-zinc-200 my-1"></div>
+                    </div>
+                    <div className={`flex-1 bg-white p-5 rounded-[1.8rem] border transition-all duration-300 shadow-sm ${act.completed ? 'border-brand-success/20 bg-brand-success/5' : 'border-zinc-100 hover:border-zinc-200 hover:shadow-lg'}`}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${act.type === 'Llamada' ? 'text-blue-600' : act.type === 'Reunión' ? 'text-purple-600' : 'text-zinc-950'}`}>{act.type}</span>
+                        <span className="text-[8px] font-bold text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded-full">{new Date(act.date).toLocaleString()}</span>
+                      </div>
+                      <p className={`text-[12px] leading-relaxed font-medium ${act.completed ? 'text-zinc-500 line-through' : 'text-zinc-950'}`}>{act.content}</p>
+                      {act.dueDate && (
+                        <div className="mt-3 pt-3 border-t border-zinc-50 flex items-center gap-2">
+                           <span className="text-[8px] font-black text-hungers uppercase tracking-widest">Agenda para:</span>
+                           <span className="text-[10px] font-black text-zinc-950">{new Date(act.dueDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 border-t border-dark-border bg-zinc-900/50 flex gap-4">
-          <button onClick={handleSave} className="flex-1 bg-hungers text-dark font-black py-3.5 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-hungers/20">
-            {isCreation ? 'Crear Nuevo Registro' : 'Confirmar Cambios'}
-          </button>
-          <button onClick={onClose} className="px-8 border border-zinc-700 text-zinc-400 font-bold py-3.5 rounded-xl hover:bg-zinc-800 hover:text-white transition-all">Descartar</button>
+        <div className="p-6 bg-white border-t border-zinc-100 flex justify-end gap-6 items-center">
+          <button onClick={onClose} className="px-6 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-zinc-950 transition-all">Cancelar</button>
+          <button onClick={handleSave} className="bg-hungers text-zinc-950 px-12 py-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.1em] shadow-xl shadow-hungers/30 hover:scale-[1.02] active:scale-[0.98] transition-all">Guardar Deal</button>
         </div>
       </div>
     </div>
