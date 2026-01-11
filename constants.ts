@@ -2,10 +2,9 @@
 import { Deal, DealStatus, Seller } from './types';
 
 export const SELLERS: Seller[] = [
-  { id: 'sel-1', name: 'Andrés Mendoza' },
-  { id: 'sel-2', name: 'Beatriz Salazar' },
-  { id: 'sel-3', name: 'Carlos Ibáñez' },
-  { id: 'sel-4', name: 'Daniela Torres' }
+  { id: 'sel-admin', name: 'admin', password: 'hungers2025', role: 'admin' },
+  { id: 'sel-1', name: 'Andrés Mendoza', password: 'password123', role: 'seller' },
+  { id: 'sel-2', name: 'Beatriz Salazar', password: 'password123', role: 'seller' }
 ];
 
 export const INITIAL_DEALS: Deal[] = [
@@ -13,6 +12,7 @@ export const INITIAL_DEALS: Deal[] = [
     id: '1',
     title: 'Acuerdo con Restaurante El Olivo',
     value: 12000,
+    currency: 'USD',
     contactName: 'Carlos García',
     organization: 'El Olivo Gourmet',
     phone: '+57 300 123 4567',
@@ -29,7 +29,8 @@ export const INITIAL_DEALS: Deal[] = [
   {
     id: '2',
     title: 'Suministro Cadena Foodie',
-    value: 45000,
+    value: 450000,
+    currency: 'MXN',
     contactName: 'Lucía Méndez',
     organization: 'Foodie Corp',
     phone: '+52 55 1234 5678',
@@ -50,5 +51,6 @@ export const PIPELINE_STAGES = [
   DealStatus.CONTACTED,
   DealStatus.MEETING_SCHEDULED,
   DealStatus.PROPOSAL_SENT,
-  DealStatus.NEGOTIATING
+  DealStatus.NEGOTIATING,
+  DealStatus.CLOSED
 ];
