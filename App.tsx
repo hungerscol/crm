@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import DealCard from './components/DealCard';
@@ -26,7 +27,6 @@ const App: React.FC = () => {
   const [draggedOverStage, setDraggedOverStage] = useState<DealStatus | null>(null);
   const [countryFilter, setCountryFilter] = useState<Country | 'All'>('All');
   
-  // Admin supervision state
   const [viewingSellerId, setViewingSellerId] = useState<string | null>(null);
 
   const [sellers, setSellers] = useState<Seller[]>(() => {
@@ -52,7 +52,6 @@ const App: React.FC = () => {
     }));
   });
 
-  // Persistencia de datos - Garantiza que usuarios y deals se guarden siempre
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
     localStorage.setItem(SELLERS_KEY, JSON.stringify(sellers));
@@ -73,7 +72,6 @@ const App: React.FC = () => {
   };
 
   const handleUpdateDeal = (updatedDeal: Deal) => {
-    // Sincronizar contacto automáticamente
     if (updatedDeal.contactName && updatedDeal.email) {
       setContacts(prev => {
         const existing = prev.find(c => c.email === updatedDeal.email || c.id === updatedDeal.contactId);
