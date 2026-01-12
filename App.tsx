@@ -52,6 +52,7 @@ const App: React.FC = () => {
     }));
   });
 
+  // CRITICAL: Robust persistence for Admin and Seller data
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
     localStorage.setItem(SELLERS_KEY, JSON.stringify(sellers));
