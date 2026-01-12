@@ -1,5 +1,13 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Deal, LeadQualification } from "../types";
+
+// Declaración para evitar errores de TS si el objeto process no está definido globalmente en el build
+declare const process: {
+  env: {
+    API_KEY: string;
+  };
+};
 
 export const analyzeDeal = async (deal: Deal): Promise<string> => {
   try {
