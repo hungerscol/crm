@@ -1,18 +1,16 @@
 
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Deal, LeadQualification } from "../types";
 
 /**
  * Uses Gemini 3 Pro to analyze a deal and provide professional sales strategy insights.
- * Follows Google GenAI SDK best practices for initialization using process.env.API_KEY.
  */
 export const analyzeDeal = async (deal: Deal): Promise<string> => {
   try {
-    // Correctly using process.env.API_KEY as the exclusive source for the API key.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview', // Upgraded to Pro for complex strategic reasoning.
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
       contents: `Eres el Director de Estrategia de Ventas Senior en "Hungers". Tu especialidad es el cierre táctico de tratos complejos en el sector logístico y de alimentos.
       
       Analiza este trato y proporciona una guía de CIERRE PROFESIONAL:
@@ -25,7 +23,6 @@ export const analyzeDeal = async (deal: Deal): Promise<string> => {
       Responde con: Gatillo Psicológico, Estrategia de Valor, Manejo de Objeciones y NEXT STEP IMPERATIVO.`,
     });
     
-    // Accessing .text property directly as per latest SDK guidelines.
     return response.text || "La IA no pudo generar una estrategia en este momento.";
   } catch (error) {
     console.error("Error analyzing deal:", error);
@@ -38,10 +35,9 @@ export const analyzeDeal = async (deal: Deal): Promise<string> => {
  */
 export const qualifyLead = async (deal: Deal): Promise<Partial<LeadQualification>> => {
   try {
-    // Initializing with the required process.env.API_KEY parameter.
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Califica la calidad de este Lead para Hungers. Empresa: ${deal.organization}. Prioridad: ${deal.priority}.`,
       config: {
