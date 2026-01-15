@@ -1,11 +1,9 @@
 
 /**
- * Environment type definitions.
- * Removed failing vite/client reference to resolve compilation errors.
+ * Environment type definitions for Hungers CRM.
  */
 
 interface ImportMetaEnv {
-  // Marked as readonly; key management is handled via process.env in geminiService.
   readonly [key: string]: string | boolean | undefined;
 }
 
@@ -13,9 +11,10 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-// Ensure process.env is recognized in the global scope for API key access.
-declare const process: {
-  env: {
+// Declaración global segura para process.env sin conflicto de bloque
+declare namespace NodeJS {
+  interface ProcessEnv {
+    API_KEY: string;
     [key: string]: string | undefined;
-  };
-};
+  }
+}

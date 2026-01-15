@@ -1,45 +1,40 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hungers CRM | Sales Engine</title>
+    <title>HUNGERS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            color: #18181b;
+            background-color: #c1ff72; /* Fondo oficial Hungers */
+            color: #1a3a1a; /* Verde oscuro para texto */
             margin: 0;
             overflow: hidden;
             height: 100vh;
             width: 100vw;
         }
-        #root { height: 100%; width: 100%; }
+        #root { 
+            height: 100%; 
+            width: 100%; 
+            background-color: transparent; 
+        }
         
-        /* Scrollbars Estilo Pipedrive Light */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f4f4f5; }
-        ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 10px; border: 2px solid #f4f4f5; }
-        ::-webkit-scrollbar-thumb:hover { background: #c1ff72; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #88d43d; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #1a3a1a; }
         
         .pipeline-chevron {
             clip-path: polygon(0% 0%, 93% 0%, 100% 50%, 93% 100%, 0% 100%, 7% 50%);
         }
         .pipeline-chevron:first-child { clip-path: polygon(0% 0%, 93% 0%, 100% 50%, 93% 100%, 0% 100%); }
-        
-        .pipeline-column {
-            background-color: #f4f4f5;
-            min-width: 280px;
-            max-width: 320px;
-        }
 
-        .glass-morphism {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1ff72; border-radius: 10px; }
     </style>
     <script>
         window.tailwind.config = {
@@ -47,10 +42,13 @@
                 extend: {
                     colors: {
                         hungers: '#c1ff72',
-                        brand: {
-                            success: '#22c55e',
-                            error: '#ef4444'
-                        }
+                        'hungers-dark': '#1a3a1a', 
+                        'hungers-medium': '#88d43d',
+                        'hungers-soft': '#f1ffde'
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                        '5xl': '3rem'
                     }
                 }
             }
@@ -59,13 +57,13 @@
 <script type="importmap">
 {
   "imports": {
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
     "vite": "https://esm.sh/vite@^7.3.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.36.0",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3"
+    "react": "https://esm.sh/react@^19.2.3",
+    "recharts": "https://esm.sh/recharts@^3.6.0"
   }
 }
 </script>
