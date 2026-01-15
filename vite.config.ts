@@ -12,6 +12,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    historyApiFallback: true
+    // Note: Vite handles history API fallback for SPAs by default in development.
   },
 });

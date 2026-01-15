@@ -121,11 +121,14 @@ const App: React.FC = () => {
   };
 
   const filteredDeals = useMemo(() => {
+    if (!currentUser) return [];
     return deals.filter(d => {
       const matchesSearch = d.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            d.organization.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCountry = countryFilter === 'All' || d.country === countryFilter;
-      let matchesSeller = viewingSellerId ? d.sellerId === viewingSellerId : (currentUser?.role === 'admin' ? true : d.sellerId === currentUser?.id);
+      let matchesSeller = viewingSellerId 
+        ? d.sellerId === viewingSellerId 
+        : (currentUser.role === 'admin' ? true : d.sellerId === currentUser.id);
       return matchesSearch && matchesCountry && matchesSeller;
     });
   }, [deals, searchTerm, countryFilter, currentUser, viewingSellerId]);
@@ -264,7 +267,7 @@ const App: React.FC = () => {
                     <YAxis fontSize={9} axisLine={false} tickLine={false} stroke="#88d43d" />
                     <Tooltip cursor={{fill: '#f1ffde'}} contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)', backgroundColor: '#fff'}} />
                     <Bar dataKey="count" radius={[10, 10, 0, 0]} barSize={50}>
-                      {PIPELINE_STAGES.map((entry, index) => (
+                      {PIPELINE_STAGES.map((_entry, index) => (
                         <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#c1ff72' : '#88d43d'} />
                       ))}
                     </Bar>
@@ -370,7 +373,7 @@ const App: React.FC = () => {
              if(selectedSellerForEdit) {
                setSellers(prev => prev.map(s => s.id === selectedSellerForEdit.id ? {...s, ...data} : s));
              } else {
-               const newSeller: Seller = { id: `sel-${Date.now()}`, name: data.name!, role: data.role as any, password: data.password };
+               const newSeller: Seller = { id: `sel-${Date.now()}`, name: data.name || '', role: (data.role as any) || 'seller', password: data.password };
                setSellers(prev => [...prev, newSeller]);
              }
              setIsSellerModalOpen(false);
