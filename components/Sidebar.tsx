@@ -21,45 +21,44 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onLogout, syn
   const menuItems = allMenuItems.filter(item => !item.adminOnly || userRole === 'admin');
 
   return (
-    <aside className="w-16 lg:w-52 bg-[#f8f9fa] border-r border-zinc-200 h-screen flex flex-col transition-all duration-300 z-20">
+    <aside className="w-16 lg:w-52 bg-white/20 backdrop-blur-sm lg:bg-transparent h-full flex flex-col transition-all duration-300 z-20">
       <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6">
-        <div className="w-8 h-8 bg-hungers rounded-lg flex items-center justify-center text-zinc-950 font-black text-lg shadow-sm">H</div>
-        <span className="hidden lg:block ml-3 font-black text-xs tracking-tight text-zinc-950">HUNGER CRM</span>
+        <div className="w-10 h-10 bg-hungers-medium rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg">H</div>
+        <span className="hidden lg:block ml-3 font-black text-[10px] tracking-tight text-hungers-dark uppercase">HUNGERS</span>
       </div>
       
-      <nav className="flex-1 px-2 py-4 space-y-1">
+      <nav className="flex-1 px-2 py-8 space-y-2">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onTabChange(item.id)}
-            className={`w-full flex items-center lg:px-4 py-2.5 rounded-lg transition-all duration-200 group ${
+            className={`w-full flex items-center lg:px-5 py-3 rounded-2xl transition-all duration-200 group ${
               activeTab === item.id 
-                ? 'bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200' 
-                : 'text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-950'
+                ? 'bg-hungers text-hungers-dark shadow-md ring-1 ring-hungers-medium/30' 
+                : 'text-hungers-dark hover:bg-white/40'
             }`}
           >
             <div className="flex-shrink-0 w-full lg:w-auto flex justify-center">
-              <svg className={`w-4 h-4 ${activeTab === item.id ? 'text-zinc-950' : 'text-zinc-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${activeTab === item.id ? 'text-hungers-dark' : 'text-hungers-medium'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={item.icon} />
               </svg>
             </div>
-            <span className="hidden lg:block ml-3 text-[10px] font-black uppercase tracking-wider">{item.label}</span>
-            {activeTab === item.id && <div className="hidden lg:block ml-auto w-1 h-1 rounded-full bg-hungers"></div>}
+            <span className="hidden lg:block ml-4 text-[10px] font-black uppercase tracking-widest">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="p-2 space-y-1 border-t border-zinc-200">
+      <div className="p-4 border-t border-hungers-medium/10">
         <button 
           onClick={onLogout}
-          className="w-full flex items-center lg:px-4 py-3 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-all"
+          className="w-full flex items-center lg:px-5 py-3 rounded-2xl text-hungers-dark hover:text-red-700 hover:bg-red-50 transition-all"
         >
           <div className="flex-shrink-0 w-full lg:w-auto flex justify-center">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7" />
             </svg>
           </div>
-          <span className="hidden lg:block ml-3 text-[10px] font-black uppercase tracking-wider">Cerrar Sesión</span>
+          <span className="hidden lg:block ml-4 text-[10px] font-black uppercase tracking-widest">Salir</span>
         </button>
       </div>
     </aside>

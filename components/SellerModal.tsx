@@ -31,27 +31,27 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-200/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-hungers-dark/20 backdrop-blur-sm p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-md rounded-[2.5rem] border border-zinc-200 flex flex-col overflow-hidden shadow-2xl animate-in zoom-in duration-300">
         <div className="p-8 border-b border-zinc-100 bg-zinc-50/50">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tighter">
+            <h3 className="text-xl font-black text-hungers-dark uppercase tracking-tighter">
               {seller ? 'Editar Miembro' : 'Nuevo Representante'}
             </h3>
-            <button onClick={onClose} className="p-2 hover:bg-zinc-200 rounded-xl transition-all">✕</button>
+            <button onClick={onClose} className="p-2 hover:bg-zinc-200 rounded-xl transition-all text-hungers-medium">✕</button>
           </div>
-          <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">
+          <p className="text-[10px] text-hungers-medium font-black uppercase tracking-widest">
             {seller ? 'Modificar credenciales o rol' : 'Añadir nuevo vendedor al ecosistema'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Nombre Completo</label>
+            <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Nombre Completo</label>
             <input 
               type="text" 
               required
-              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all"
+              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all text-hungers-dark placeholder:text-zinc-200"
               placeholder="Ej. Juan Pérez"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -59,11 +59,11 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Contraseña de Acceso</label>
+            <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Contraseña de Acceso</label>
             <input 
               type="password" 
               required
-              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all"
+              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all text-hungers-dark placeholder:text-zinc-200"
               placeholder="••••••••"
               value={formData.password}
               onChange={e => setFormData({ ...formData, password: e.target.value })}
@@ -71,9 +71,9 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">Rol del Usuario</label>
+            <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Rol del Usuario</label>
             <select 
-              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all appearance-none cursor-pointer"
+              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all appearance-none cursor-pointer text-hungers-dark"
               value={formData.role}
               onChange={e => setFormData({ ...formData, role: e.target.value as 'admin' | 'seller' })}
             >
@@ -86,13 +86,13 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
             <button 
               type="button" 
               onClick={onClose}
-              className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-950 transition-all"
+              className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-hungers-medium hover:text-hungers-dark transition-all"
             >
               Cancelar
             </button>
             <button 
               type="submit" 
-              className="flex-1 bg-hungers text-zinc-950 font-black py-4 rounded-2xl hover:shadow-xl shadow-hungers/30 active:scale-95 transition-all uppercase text-[10px] tracking-widest"
+              className="flex-1 bg-hungers text-hungers-dark font-black py-4 rounded-2xl hover:shadow-xl shadow-hungers/30 active:scale-95 transition-all uppercase text-[10px] tracking-widest"
             >
               {seller ? 'Actualizar' : 'Crear Miembro'}
             </button>
