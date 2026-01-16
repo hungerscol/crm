@@ -19,14 +19,24 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
     if (seller) {
       setFormData({
         name: seller.name,
-        password: seller.password,
+        password: seller.password || '',
         role: seller.role
+      });
+    } else {
+      setFormData({
+        name: '',
+        password: '',
+        role: 'seller'
       });
     }
   }, [seller]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name?.trim() || !formData.password?.trim()) {
+      alert('Por favor completa todos los campos para el acceso de HUNGERS.');
+      return;
+    }
     onSave(formData);
   };
 
@@ -47,12 +57,13 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Nombre Completo</label>
+            <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Nombre Completo / Usuario</label>
             <input 
               type="text" 
               required
+              autoFocus
               className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all text-hungers-dark placeholder:text-zinc-200"
-              placeholder="Ej. Juan Pérez"
+              placeholder="Ej. Andrés Mendoza"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
             />
@@ -61,25 +72,31 @@ const SellerModal: React.FC<SellerModalProps> = ({ seller, onClose, onSave }) =>
           <div className="space-y-1">
             <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Contraseña de Acceso</label>
             <input 
-              type="password" 
+              type="text" 
               required
               className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all text-hungers-dark placeholder:text-zinc-200"
-              placeholder="••••••••"
+              placeholder="Min. 6 caracteres"
               value={formData.password}
               onChange={e => setFormData({ ...formData, password: e.target.value })}
             />
+            <p className="text-[8px] text-hungers-medium uppercase font-bold mt-1 ml-2 opacity-60">* Este campo será necesario para iniciar sesión.</p>
           </div>
 
           <div className="space-y-1">
             <label className="text-[10px] font-black text-hungers-medium uppercase tracking-widest ml-2">Rol del Usuario</label>
-            <select 
-              className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all appearance-none cursor-pointer text-hungers-dark"
-              value={formData.role}
-              onChange={e => setFormData({ ...formData, role: e.target.value as 'admin' | 'seller' })}
-            >
-              <option value="seller">Representante de Ventas (Seller)</option>
-              <option value="admin">Administrador (Control Total)</option>
-            </select>
+            <div className="relative">
+              <select 
+                className="w-full bg-zinc-50 border border-zinc-100 rounded-2xl px-5 py-4 text-sm font-bold focus:border-hungers focus:ring-4 focus:ring-hungers/10 outline-none transition-all appearance-none cursor-pointer text-hungers-dark"
+                value={formData.role}
+                onChange={e => setFormData({ ...formData, role: e.target.value as 'admin' | 'seller' })}
+              >
+                <option value="seller">Representante de Ventas (Seller)</option>
+                <option value="admin">Administrador (Control Total)</option>
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-hungers-medium">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
           </div>
 
           <div className="pt-4 flex gap-4">
