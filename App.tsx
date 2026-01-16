@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import DealCard from './components/DealCard';
 import DealDetailModal from './components/DealDetailModal';
 import SellerModal from './components/SellerModal';
-import { Deal, DealStatus, Country, Seller, Contact, Activity } from './types';
+import { Deal, DealStatus, Country, Seller, Contact } from './types';
 import { INITIAL_DEALS, PIPELINE_STAGES, SELLERS as DEFAULT_SELLERS } from './constants';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
@@ -27,7 +27,7 @@ const App: React.FC = () => {
   const [draggedOverStage, setDraggedOverStage] = useState<DealStatus | null>(null);
   const [countryFilter, setCountryFilter] = useState<Country | 'All'>('All');
   
-  const [viewingSellerId, setViewingSellerId] = useState<string | null>(null);
+  const [viewingSellerId] = useState<string | null>(null);
 
   const [sellers, setSellers] = useState<Seller[]>(() => {
     const saved = localStorage.getItem(SELLERS_KEY);
@@ -60,7 +60,8 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const user = sellers.find(s => s.name === loginData.user && s.password === loginData.pass);
+    // Normalizamos la búsqueda para que no haya problemas con espacios o mayúsculas en el nombre de usuario
+    const user = sellers.find(s => s.name.trim().toLowerCase() === loginData.user.trim().toLowerCase() && s.password === loginData.pass);
     if (user) {
       setCurrentUser(user);
       setLoginError('');
@@ -370,10 +371,23 @@ const App: React.FC = () => {
           seller={selectedSellerForEdit} 
           onClose={() => { setIsSellerModalOpen(false); setSelectedSellerForEdit(null); }} 
           onSave={(data) => {
+             const trimmedName = data.name?.trim() || '';
+             
              if(selectedSellerForEdit) {
-               setSellers(prev => prev.map(s => s.id === selectedSellerForEdit.id ? {...s, ...data} : s));
+               // Editar existente
+               setSellers(prev => prev.map(s => s.id === selectedSellerForEdit.id ? {...s, ...data, name: trimmedName} : s));
              } else {
-               const newSeller: Seller = { id: `sel-${Date.now()}`, name: data.name || '', role: (data.role as any) || 'seller', password: data.password };
+               // Crear nuevo
+               if (sellers.some(s => s.name.toLowerCase() === trimmedName.toLowerCase())) {
+                 alert('Este nombre de usuario ya existe en HUNGERS. Por favor elige uno diferente.');
+                 return;
+               }
+               const newSeller: Seller = { 
+                 id: `sel-${Date.now()}`, 
+                 name: trimmedName, 
+                 role: (data.role as any) || 'seller', 
+                 password: data.password || 'password123' 
+               };
                setSellers(prev => [...prev, newSeller]);
              }
              setIsSellerModalOpen(false);

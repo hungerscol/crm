@@ -1,10 +1,17 @@
 
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      input: './index.html',
+    },
+  },
   server: {
-    port: 5173,
+    port: 3000,
+    // Note: Vite handles history API fallback for SPAs by default in development.
   },
 });
