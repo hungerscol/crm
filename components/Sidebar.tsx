@@ -7,9 +7,10 @@ interface SidebarProps {
   onLogout: () => void;
   syncStatus: 'idle' | 'success' | 'error' | 'syncing';
   userRole?: 'admin' | 'seller';
+  onOpenImport: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onLogout, syncStatus, userRole }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onLogout, syncStatus, userRole, onOpenImport }) => {
   const allMenuItems = [
     { id: 'pipeline', label: 'Negocios', icon: 'M4 6h16M4 12h16M4 18h7' },
     { id: 'dashboard', label: 'Insights', icon: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z' },
@@ -48,8 +49,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, onLogout, syn
         ))}
       </nav>
 
-      <div className="p-4 border-t border-hungers-medium/10">
-        <button 
+      <div className="p-4 border-t border-hungers-medium/10 space-y-2">
+        <button
+          onClick={onOpenImport}
+          className="w-full flex items-center lg:px-5 py-3 rounded-2xl text-hungers-dark hover:bg-hungers/20 transition-all"
+        >
+          <div className="flex-shrink-0 w-full lg:w-auto flex justify-center">
+            <svg className="w-5 h-5 text-hungers-medium" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m0-9l-3 3m3-3l3 3" />
+            </svg>
+          </div>
+          <span className="hidden lg:block ml-4 text-[10px] font-black uppercase tracking-widest">Importar CSV</span>
+        </button>
+        <button
           onClick={onLogout}
           className="w-full flex items-center lg:px-5 py-3 rounded-2xl text-hungers-dark hover:text-red-700 hover:bg-red-50 transition-all"
         >

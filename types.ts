@@ -60,6 +60,7 @@ export interface Deal {
   currency: Currency;
   contactId?: string; // Relación con contactos
   contactName: string; // Para compatibilidad rápida
+  contactTitle?: string; // Cargo/puesto del contacto
   organization: string;
   phone: string;
   email: string;

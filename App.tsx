@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import DealCard from './components/DealCard';
 import DealDetailModal from './components/DealDetailModal';
 import SellerModal from './components/SellerModal';
+import ImportCSVModal from './components/ImportCSVModal';
 import { Deal, DealStatus, Country, Seller, Contact } from './types';
 import { INITIAL_DEALS, PIPELINE_STAGES, SELLERS as DEFAULT_SELLERS } from './constants';
 import { 
@@ -24,6 +25,7 @@ const App: React.FC = () => {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [selectedSellerForEdit, setSelectedSellerForEdit] = useState<Seller | null>(null);
   const [isSellerModalOpen, setIsSellerModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [draggedOverStage, setDraggedOverStage] = useState<DealStatus | null>(null);
   const [countryFilter, setCountryFilter] = useState<Country | 'All'>('All');
   
@@ -104,6 +106,13 @@ const App: React.FC = () => {
     });
   };
 
+  const handleImportDeals = (newDeals: Deal[], updatedDeals: Deal[]) => {
+    setDeals(prev => {
+      const merged = prev.map(d => updatedDeals.find(u => u.id === d.id) || d);
+      return [...newDeals, ...merged];
+    });
+  };
+
   const handleExportCSV = () => {
     const headers = ["ID", "Nombre", "Email", "Telefono", "Organizacion", "Creado"];
     const csvContent = [
@@ -176,6 +185,7 @@ const App: React.FC = () => {
         onLogout={() => setCurrentUser(null)} 
         syncStatus="success"
         userRole={currentUser.role}
+        onOpenImport={() => setIsImportModalOpen(true)}
       />
       
       <main className="flex-1 flex flex-col min-w-0 bg-white rounded-[2.5rem] shadow-2xl overflow-hidden">
@@ -363,6 +373,15 @@ const App: React.FC = () => {
                setSelectedDeal(null);
              }
           } : undefined}
+        />
+      )}
+
+      {isImportModalOpen && (
+        <ImportCSVModal
+          existingDeals={deals}
+          currentUserId={currentUser.id}
+          onClose={() => setIsImportModalOpen(false)}
+          onImport={handleImportDeals}
         />
       )}
 
