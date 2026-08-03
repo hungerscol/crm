@@ -5,6 +5,7 @@ import DealCard from './components/DealCard';
 import DealDetailModal from './components/DealDetailModal';
 import SellerModal from './components/SellerModal';
 import ImportCSVModal from './components/ImportCSVModal';
+import Papa from 'papaparse';
 import { Deal, DealStatus, Country, Seller, Contact } from './types';
 import { INITIAL_DEALS, PIPELINE_STAGES, SELLERS as DEFAULT_SELLERS } from './constants';
 import { 
@@ -114,11 +115,14 @@ const App: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const headers = ["ID", "Nombre", "Email", "Telefono", "Organizacion", "Creado"];
-    const csvContent = [
-      headers.join(","),
-      ...contacts.map(c => [`"${c.id}"`, `"${c.name}"`, `"${c.email}"`, `"${c.phone}"`, `"${c.organization}"`, `"${c.createdAt}"`].join(","))
-    ].join("\n");
+    const csvContent = Papa.unparse(contacts.map(c => ({
+      ID: c.id,
+      Nombre: c.name,
+      Email: c.email,
+      Telefono: c.phone,
+      Organizacion: c.organization,
+      Creado: c.createdAt
+    })));
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -325,7 +329,19 @@ const App: React.FC = () => {
                         </td>
                         <td className="text-[10px] font-black text-hungers-medium uppercase tracking-tighter">{c.organization}</td>
                         <td className="p-6 text-right">
-                          <button className="text-[9px] font-black uppercase px-4 py-2 border border-zinc-200 rounded-xl hover:bg-hungers text-hungers-dark transition-all">Perfil</button>
+                          <button
+                            onClick={() => {
+                              const relatedDeal = deals.find(d => d.contactId === c.id)
+                                || deals.find(d => c.email && d.email === c.email)
+                                || deals.find(d => d.organization === c.organization);
+                              if (relatedDeal) {
+                                setSelectedDeal(relatedDeal);
+                              } else {
+                                alert('No hay un negocio asociado a este contacto.');
+                              }
+                            }}
+                            className="text-[9px] font-black uppercase px-4 py-2 border border-zinc-200 rounded-xl hover:bg-hungers text-hungers-dark transition-all"
+                          >Perfil</button>
                         </td>
                       </tr>
                     ))}

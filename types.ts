@@ -7,7 +7,8 @@ export enum DealStatus {
   NEGOTIATING = 'Negociación',
   CLOSED = 'Cerrado',
   WON = 'Ganado',
-  LOST = 'Perdido'
+  LOST = 'Perdido',
+  DISCARDED = 'Descartado'
 }
 
 export type LeadCategory = 'Hot' | 'Warm' | 'Cold' | 'Unqualified';

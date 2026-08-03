@@ -213,6 +213,10 @@ const ImportCSVModal: React.FC<ImportCSVModalProps> = ({ existingDeals, currentU
     setDuplicates(prev => prev.map((d, i) => i === index ? { ...d, action } : d));
   };
 
+  const setAllDuplicatesAction = (action: 'update' | 'skip') => {
+    setDuplicates(prev => prev.map(d => ({ ...d, action })));
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-hungers-dark/20 backdrop-blur-sm p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-[2.5rem] border border-zinc-200 flex flex-col overflow-hidden shadow-2xl animate-in zoom-in duration-300">
@@ -298,6 +302,16 @@ const ImportCSVModal: React.FC<ImportCSVModalProps> = ({ existingDeals, currentU
           {step === 'duplicates' && (
             <div className="space-y-4">
               <p className="text-[10px] text-hungers-medium font-bold">Para cada empresa ya existente en el pipeline, elige si quieres actualizar el negocio existente o saltar (omitir) la fila del CSV.</p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setAllDuplicatesAction('skip')}
+                  className="px-5 py-2 text-[9px] font-black uppercase tracking-widest border border-zinc-200 rounded-xl text-hungers-medium hover:bg-zinc-50 transition-all"
+                >Saltar Todos</button>
+                <button
+                  onClick={() => setAllDuplicatesAction('update')}
+                  className="px-5 py-2 text-[9px] font-black uppercase tracking-widest border border-zinc-200 rounded-xl text-hungers-medium hover:bg-zinc-50 transition-all"
+                >Actualizar Todos</button>
+              </div>
               <div className="border border-zinc-200 rounded-2xl overflow-hidden divide-y divide-zinc-100">
                 {duplicates.map((d, i) => (
                   <div key={i} className="p-4 flex items-center justify-between gap-4">

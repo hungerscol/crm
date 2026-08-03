@@ -52,5 +52,6 @@ export const PIPELINE_STAGES = [
   DealStatus.MEETING_SCHEDULED,
   DealStatus.PROPOSAL_SENT,
   DealStatus.NEGOTIATING,
-  DealStatus.CLOSED
+  DealStatus.CLOSED,
+  DealStatus.DISCARDED
 ];
