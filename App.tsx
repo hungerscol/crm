@@ -6,15 +6,60 @@ import DealDetailModal from './components/DealDetailModal';
 import SellerModal from './components/SellerModal';
 import ImportCSVModal from './components/ImportCSVModal';
 import Papa from 'papaparse';
+import { supabase } from './lib/supabaseClient';
 import { Deal, DealStatus, Country, Seller, Contact } from './types';
 import { INITIAL_DEALS, PIPELINE_STAGES, SELLERS as DEFAULT_SELLERS } from './constants';
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 
-const STORAGE_KEY = 'hungers_crm_v14_deals';
 const SELLERS_KEY = 'hungers_crm_v14_sellers';
 const CONTACTS_KEY = 'hungers_crm_v14_contacts';
+
+// Mapeo entre el shape de `Deal` (camelCase) y la tabla `deals` de Supabase (snake_case)
+const dealToRow = (d: Deal) => ({
+  id: d.id,
+  title: d.title,
+  value: d.value,
+  currency: d.currency,
+  contact_id: d.contactId ?? null,
+  contact_name: d.contactName,
+  contact_title: d.contactTitle ?? null,
+  organization: d.organization,
+  phone: d.phone,
+  email: d.email,
+  address: d.address,
+  status: d.status,
+  priority: d.priority,
+  activities: d.activities,
+  next_steps: d.nextSteps,
+  created_at: d.createdAt,
+  country: d.country,
+  seller_id: d.sellerId,
+  qualification: d.qualification ?? null,
+});
+
+const rowToDeal = (r: any): Deal => ({
+  id: r.id,
+  title: r.title,
+  value: r.value,
+  currency: r.currency,
+  contactId: r.contact_id ?? undefined,
+  contactName: r.contact_name,
+  contactTitle: r.contact_title ?? undefined,
+  organization: r.organization,
+  phone: r.phone,
+  email: r.email,
+  address: r.address,
+  status: r.status,
+  priority: r.priority,
+  activities: r.activities ?? [],
+  nextSteps: r.next_steps,
+  createdAt: r.created_at,
+  country: r.country,
+  sellerId: r.seller_id,
+  qualification: r.qualification ?? undefined,
+});
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<Seller | null>(null);
@@ -37,10 +82,9 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : DEFAULT_SELLERS;
   });
 
-  const [deals, setDeals] = useState<Deal[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : INITIAL_DEALS;
-  });
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [isLoadingDeals, setIsLoadingDeals] = useState(true);
+  const [dealsError, setDealsError] = useState<string | null>(null);
 
   const [contacts, setContacts] = useState<Contact[]>(() => {
     const saved = localStorage.getItem(CONTACTS_KEY);
@@ -56,10 +100,23 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
     localStorage.setItem(SELLERS_KEY, JSON.stringify(sellers));
     localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
-  }, [deals, sellers, contacts]);
+  }, [sellers, contacts]);
+
+  useEffect(() => {
+    const loadDeals = async () => {
+      setIsLoadingDeals(true);
+      const { data, error } = await supabase.from('deals').select('*');
+      if (error) {
+        setDealsError(`No se pudieron cargar los negocios desde Supabase: ${error.message}`);
+      } else {
+        setDeals((data || []).map(rowToDeal));
+      }
+      setIsLoadingDeals(false);
+    };
+    loadDeals();
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,44 +131,61 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateDeal = (updatedDeal: Deal) => {
+  const handleUpdateDeal = async (updatedDeal: Deal) => {
+    let dealToSave = updatedDeal;
+
     if (updatedDeal.contactName && updatedDeal.email) {
-      setContacts(prev => {
-        const existing = prev.find(c => c.email === updatedDeal.email || c.id === updatedDeal.contactId);
-        if (existing) {
-          return prev.map(c => c.id === existing.id ? {
-            ...c,
-            name: updatedDeal.contactName,
-            phone: updatedDeal.phone,
-            organization: updatedDeal.organization
-          } : c);
-        } else {
-          const newContact: Contact = {
-            id: `con-${Date.now()}`,
-            name: updatedDeal.contactName,
-            email: updatedDeal.email,
-            phone: updatedDeal.phone,
-            organization: updatedDeal.organization,
-            createdAt: new Date().toISOString()
-          };
-          updatedDeal.contactId = newContact.id;
-          return [...prev, newContact];
-        }
-      });
+      const existingContact = contacts.find(c => c.email === updatedDeal.email || c.id === updatedDeal.contactId);
+      if (existingContact) {
+        setContacts(prev => prev.map(c => c.id === existingContact.id ? {
+          ...c,
+          name: updatedDeal.contactName,
+          phone: updatedDeal.phone,
+          organization: updatedDeal.organization
+        } : c));
+      } else {
+        const newContact: Contact = {
+          id: `con-${Date.now()}`,
+          name: updatedDeal.contactName,
+          email: updatedDeal.email,
+          phone: updatedDeal.phone,
+          organization: updatedDeal.organization,
+          createdAt: new Date().toISOString()
+        };
+        setContacts(prev => [...prev, newContact]);
+        dealToSave = { ...updatedDeal, contactId: newContact.id };
+      }
     }
 
+    const isNew = !deals.some(d => d.id === dealToSave.id);
     setDeals(prev => {
-      const exists = prev.find(d => d.id === updatedDeal.id);
-      if (exists) return prev.map(d => d.id === updatedDeal.id ? updatedDeal : d);
-      return [updatedDeal, ...prev];
+      const exists = prev.find(d => d.id === dealToSave.id);
+      if (exists) return prev.map(d => d.id === dealToSave.id ? dealToSave : d);
+      return [dealToSave, ...prev];
     });
+
+    const { error } = isNew
+      ? await supabase.from('deals').insert(dealToRow(dealToSave))
+      : await supabase.from('deals').update(dealToRow(dealToSave)).eq('id', dealToSave.id);
+
+    if (error) {
+      setDealsError(`No se pudo guardar el negocio en Supabase: ${error.message}`);
+    }
   };
 
-  const handleImportDeals = (newDeals: Deal[], updatedDeals: Deal[]) => {
+  const handleImportDeals = async (newDeals: Deal[], updatedDeals: Deal[]) => {
     setDeals(prev => {
       const merged = prev.map(d => updatedDeals.find(u => u.id === d.id) || d);
       return [...newDeals, ...merged];
     });
+
+    const rows = [...newDeals, ...updatedDeals].map(dealToRow);
+    if (rows.length > 0) {
+      const { error } = await supabase.from('deals').upsert(rows);
+      if (error) {
+        setDealsError(`No se pudo sincronizar la importación con Supabase: ${error.message}`);
+      }
+    }
   };
 
   const handleExportCSV = () => {
@@ -218,6 +292,19 @@ const App: React.FC = () => {
           </div>
         </header>
 
+        {dealsError && (
+          <div className="bg-red-50 border-b border-red-100 px-8 py-3 flex items-center justify-between gap-4">
+            <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">{dealsError}</p>
+            <button onClick={() => setDealsError(null)} className="text-red-600 font-black text-xs flex-shrink-0">✕</button>
+          </div>
+        )}
+
+        {isLoadingDeals ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 bg-zinc-50/20">
+            <div className="w-10 h-10 border-4 border-hungers-medium border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-hungers-medium">Cargando negocios desde Supabase...</p>
+          </div>
+        ) : (
         <div className="flex-1 overflow-hidden relative bg-zinc-50/20">
           {activeTab === 'pipeline' && (
             <div className="h-full overflow-x-auto p-6 flex gap-6 custom-scrollbar">
@@ -227,11 +314,15 @@ const App: React.FC = () => {
                   className={`pipeline-column flex flex-col min-w-[300px] max-w-[300px] rounded-[2rem] border transition-all ${draggedOverStage === stage ? 'border-hungers bg-hungers/5' : 'border-zinc-200 bg-white shadow-sm'}`}
                   onDragOver={e => { e.preventDefault(); setDraggedOverStage(stage as any); }}
                   onDragLeave={() => setDraggedOverStage(null)}
-                  onDrop={e => {
+                  onDrop={async e => {
                     e.preventDefault();
                     setDraggedOverStage(null);
                     const id = e.dataTransfer.getData('dealId');
                     setDeals(prev => prev.map(d => d.id === id ? { ...d, status: stage as any } : d));
+                    const { error } = await supabase.from('deals').update({ status: stage }).eq('id', id);
+                    if (error) {
+                      setDealsError(`No se pudo actualizar el estado en Supabase: ${error.message}`);
+                    }
                   }}
                 >
                   <div className="p-5 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50 rounded-t-[2rem]">
@@ -374,6 +465,7 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
+        )}
       </main>
 
       {selectedDeal && (
@@ -383,10 +475,15 @@ const App: React.FC = () => {
           onUpdateDeal={handleUpdateDeal} 
           sellers={sellers} 
           contacts={contacts}
-          onDelete={currentUser.role === 'admin' ? () => {
+          onDelete={currentUser.role === 'admin' ? async () => {
              if(window.confirm('¿Eliminar negocio?')) {
-               setDeals(prev => prev.filter(d => d.id !== selectedDeal.id));
+               const dealId = selectedDeal.id;
+               setDeals(prev => prev.filter(d => d.id !== dealId));
                setSelectedDeal(null);
+               const { error } = await supabase.from('deals').delete().eq('id', dealId);
+               if (error) {
+                 setDealsError(`No se pudo eliminar el negocio en Supabase: ${error.message}`);
+               }
              }
           } : undefined}
         />
